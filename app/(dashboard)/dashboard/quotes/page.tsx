@@ -3,6 +3,12 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+type QuoteLead = { company_name?: string | null } | { company_name?: string | null }[] | null;
+
+function getLeadCompany(leads: QuoteLead) {
+  return (Array.isArray(leads) ? leads[0]?.company_name : leads?.company_name) ?? "Unassigned";
+}
+
 export default async function QuotesPage() {
   const supabase = await createClient();
   const { data: quotes } = await supabase
@@ -34,7 +40,7 @@ export default async function QuotesPage() {
                       {quote.quote_number}
                     </Link>
                   </td>
-                  <td className="px-4 py-3">{quote.leads?.company_name ?? "Unassigned"}</td>
+                  <td className="px-4 py-3">{getLeadCompany(quote.leads)}</td>
                   <td className="px-4 py-3">
                     <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold">{quote.status}</span>
                   </td>

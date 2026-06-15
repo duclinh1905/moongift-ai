@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-export function QuoteForm() {
+export function QuoteForm({ turnstileSiteKey }: { turnstileSiteKey?: string }) {
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -15,6 +15,10 @@ export function QuoteForm() {
     event.preventDefault();
     const form = event.currentTarget;
     const payload = Object.fromEntries(new FormData(form));
+    const turnstile = window.turnstile;
+    if (turnstileSiteKey && turnstile) {
+      payload.captchaToken = turnstile.getResponse();
+    }
 
     startTransition(async () => {
       setMessage(null);
@@ -25,7 +29,10 @@ export function QuoteForm() {
       });
       const result = await response.json();
       setMessage(response.ok ? "Quote request received. Our team will respond within one business day." : result.error);
-      if (response.ok) form.reset();
+      if (response.ok) {
+        form.reset();
+        window.turnstile?.reset();
+      }
     });
   }
 
@@ -45,6 +52,10 @@ export function QuoteForm() {
         <Label htmlFor="message">Notes</Label>
         <Textarea id="message" name="message" placeholder="Branding, dietary preferences, shipping regions, packaging needs..." />
       </div>
+      {turnstileSiteKey ? (
+        <div className="cf-turnstile" data-sitekey={turnstileSiteKey} />
+      ) : null}
+      {turnstileSiteKey ? <TurnstileScript /> : null}
       <Button disabled={isPending} className="w-full sm:w-fit">
         <Send className="size-4" />
         {isPending ? "Sending..." : "Request quote"}
@@ -71,4 +82,18 @@ function Field({
       <Input id={name} name={name} type={type} placeholder={placeholder} required />
     </div>
   );
+}
+
+
+declare global {
+  interface Window {
+    turnstile?: {
+      getResponse: () => string;
+      reset: () => void;
+    };
+  }
+}
+
+function TurnstileScript() {
+  return <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer />;
 }

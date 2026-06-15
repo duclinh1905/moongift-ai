@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { canWriteCrm, isCrmRole, type CrmRole, type WritableCrmRole } from "@/lib/roles";
 
 export async function getSessionUser() {
   const supabase = await createClient();
@@ -28,26 +29,53 @@ export async function requireUser() {
   return user;
 }
 
-export async function requireAdmin() {
+export async function requireRole(allowedRoles: readonly CrmRole[]) {
   const user = await requireUser();
   const role = await getProfileRole(user.id);
 
-  if (role !== "admin") {
+  if (!isCrmRole(role) || !allowedRoles.includes(role)) {
     redirect("/");
   }
+  return { user, role };
+}
+
+export async function requireAdmin() {
+  const { user } = await requireRole(["admin"]);
   return user;
 }
 
-export async function getAdminUser() {
+export async function requireStaff() {
+  return requireRole(["admin", "manager", "sales", "viewer"]);
+}
+
+export async function getRoleUser(allowedRoles: readonly (CrmRole | WritableCrmRole)[]) {
   const user = await getSessionUser();
   if (!user) {
-    return { user: null, status: 401 as const };
+    return { user: null, role: null, status: 401 as const };
   }
 
   const role = await getProfileRole(user.id);
-  if (role !== "admin") {
-    return { user: null, status: 403 as const };
+  if (!isCrmRole(role) || !allowedRoles.includes(role)) {
+    return { user: null, role: null, status: 403 as const };
   }
 
-  return { user, status: 200 as const };
+  return { user, role, status: 200 as const };
+}
+
+export async function getAdminUser() {
+  return getRoleUser(["admin"]);
+}
+
+export async function getWritableCrmUser() {
+  const user = await getSessionUser();
+  if (!user) {
+    return { user: null, role: null, status: 401 as const };
+  }
+
+  const role = await getProfileRole(user.id);
+  if (!canWriteCrm(role)) {
+    return { user: null, role: null, status: 403 as const };
+  }
+
+  return { user, role, status: 200 as const };
 }

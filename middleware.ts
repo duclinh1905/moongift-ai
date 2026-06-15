@@ -1,7 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
+import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 
 const protectedPrefixes = ["/dashboard"];
+const dashboardRoles = ["admin", "manager", "sales", "viewer"];
+
+type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -14,7 +18,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookieToSet[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) => {
@@ -47,7 +51,7 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .single();
 
-    if (profile?.role !== "admin") {
+    if (!dashboardRoles.includes(profile?.role)) {
       const redirectUrl = request.nextUrl.clone();
       redirectUrl.pathname = "/";
       redirectUrl.search = "";

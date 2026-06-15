@@ -3,9 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 type ActivityLogInput = {
   actorId?: string | null;
   action: string;
-  entityType: "lead" | "quote" | "quote_item" | "auth";
+  entityType: "lead" | "quote" | "quote_item" | "auth" | "artwork" | "approval" | "production" | "delivery" | "supplier" | "recipient";
   entityId?: string | null;
-  metadata?: Record<string, string | number | boolean | null>;
+  metadata?: Record<string, string | number | boolean | null | undefined>;
 };
 
 export async function logActivity({

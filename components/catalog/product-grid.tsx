@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PackageCheck } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { products } from "@/lib/products";
@@ -11,7 +12,7 @@ export function ProductGrid() {
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
               <div>
-                <CardTitle>{product.name}</CardTitle>
+                <CardTitle><Link href={`/products/${product.id}`} className="hover:underline">{product.name}</Link></CardTitle>
                 <CardDescription className="mt-2">{product.description}</CardDescription>
               </div>
               <PackageCheck className="size-5 shrink-0 text-primary" />

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 
-const leadStatuses = ["new", "qualified", "contacted", "won", "lost"] as const;
+import { leadStatusLabels, leadStatuses } from "@/lib/crm";
 
 export function LeadStatusForm({
   leadId,
@@ -50,8 +50,8 @@ export function LeadStatusForm({
           className="h-10 rounded-md border bg-background px-3 text-sm"
         >
           {leadStatuses.map((option) => (
-            <option key={option} value={option}>
-              {option}
+            <option key={leadStatusLabels[option]} value={leadStatusLabels[option]}>
+              {leadStatusLabels[option]}
             </option>
           ))}
         </select>

@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAdminUser } from "@/lib/auth";
+import { assertTrustedOrigin, apiError, jsonOk, parseJson, parseParams, withApiHandler } from "@/lib/api";
+import { getWritableCrmUser } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
+import { captureEvent } from "@/lib/monitoring";
+import { uuidParamsSchema } from "@/lib/schema";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 const quoteUpdateSchema = z.object({
@@ -9,38 +11,42 @@ const quoteUpdateSchema = z.object({
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const admin = await getAdminUser();
-  if (admin.status !== 200) {
-    return NextResponse.json(
-      { error: admin.status === 401 ? "Authentication required." : "Admin access required." },
-      { status: admin.status }
-    );
-  }
+  return withApiHandler(async () => {
+    assertTrustedOrigin(request);
+    const admin = await getWritableCrmUser();
+    if (admin.status !== 200) {
+      throw apiError(admin.status === 401 ? "Authentication required." : "Admin access required.", admin.status, "unauthorized");
+    }
 
-  const { id } = await params;
-  const parsed = quoteUpdateSchema.safeParse(await request.json());
+    const { id } = parseParams(await params, uuidParamsSchema);
+    const input = await parseJson(request, quoteUpdateSchema, "Invalid quote status.");
 
-  if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid quote status." }, { status: 400 });
-  }
+    const supabase = createAdminClient();
+    const { data: quote, error } = await supabase
+      .from("quotes")
+      .update({ status: input.status, updated_at: new Date().toISOString() })
+      .eq("id", id)
+      .select("id, lead_id")
+      .single();
 
-  const supabase = createAdminClient();
-  const { error } = await supabase
-    .from("quotes")
-    .update({ status: parsed.data.status, updated_at: new Date().toISOString() })
-    .eq("id", id);
+    if (error || !quote) throw apiError("Unable to update quote.", 500, "quote_update_failed");
 
-  if (error) {
-    return NextResponse.json({ error: "Unable to update quote." }, { status: 500 });
-  }
+    if (input.status === "accepted" || input.status === "rejected") {
+      await supabase
+        .from("leads")
+        .update({ status: input.status === "accepted" ? "won" : "lost", updated_at: new Date().toISOString() })
+        .eq("id", quote.lead_id);
+    }
 
-  await logActivity({
-    actorId: admin.user.id,
-    action: "quote.status_updated",
-    entityType: "quote",
-    entityId: id,
-    metadata: { status: parsed.data.status }
+    await logActivity({
+      actorId: admin.user.id,
+      action: "quote.status_updated",
+      entityType: "quote",
+      entityId: id,
+      metadata: { status: input.status, leadId: quote.lead_id }
+    });
+    await captureEvent({ name: "quote.status_updated", properties: { status: input.status } });
+
+    return jsonOk({ ok: true });
   });
-
-  return NextResponse.json({ ok: true });
 }
