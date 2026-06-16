@@ -1,0 +1,11 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { SiteHeader } from "@/components/landing/site-header";
+import { getLandingPage, getLandingPages } from "@/lib/cms";
+import { getSiteUrl } from "@/lib/env";
+
+export async function generateStaticParams() { return (await getLandingPages()).map((page) => ({ slug: page.slug })); }
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> { const page = await getLandingPage((await params).slug); if (!page) return {}; const url = `${getSiteUrl()}/industries/${page.slug}`; const title = page.seo_title ?? page.title; const description = page.seo_description ?? page.hero; return { title, description, alternates: { canonical: url }, openGraph: { title, description, url, type: "website" }, twitter: { card: "summary_large_image", title, description } }; }
+export default async function IndustryPage({ params }: { params: Promise<{ slug: string }> }) { const page = await getLandingPage((await params).slug); if (!page) notFound(); const faqJsonLd = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: page.faqs.map((faq) => ({ "@type": "Question", name: faq.question, acceptedAnswer: { "@type": "Answer", text: faq.answer } })) }; return <><SiteHeader /><main className="container-page py-12"><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} /><section className="max-w-3xl"><p className="text-sm font-semibold uppercase text-primary">Industry solution</p><h1 className="mt-3 text-5xl font-bold">{page.title}</h1><p className="mt-5 text-lg text-muted-foreground">{page.hero}</p><p className="mt-5 text-muted-foreground">{page.body}</p><Button asChild size="lg" className="mt-8"><Link href="/#quote">Build my gifting program</Link></Button></section><section className="mt-12 grid gap-4 md:grid-cols-2">{page.faqs.map((faq) => <div key={faq.question} className="rounded-lg border bg-card p-5"><h2 className="font-semibold">{faq.question}</h2><p className="mt-2 text-sm text-muted-foreground">{faq.answer}</p></div>)}</section></main></>; }

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Activity, BarChart3, Columns3, FileText, Inbox, Moon } from "lucide-react";
+import { Activity, BarChart3, Columns3, Factory, FileText, Inbox, Moon, Newspaper } from "lucide-react";
 import { LogoutButton } from "@/components/forms/logout-button";
-import { requireAdmin } from "@/lib/auth";
+import { requireStaff } from "@/lib/auth";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+  await requireStaff();
 
   return (
     <div className="min-h-svh bg-muted/35">
@@ -20,6 +20,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
           <NavItem href="/dashboard/quotes" icon={<FileText className="size-4" />} label="Quotes" />
           <NavItem href="/dashboard/revenue" icon={<BarChart3 className="size-4" />} label="Revenue" />
           <NavItem href="/dashboard/activity" icon={<Activity className="size-4" />} label="Activity" />
+          <NavItem href="/dashboard/cms" icon={<Newspaper className="size-4" />} label="CMS" />
+          <NavItem href="/dashboard/operations" icon={<Factory className="size-4" />} label="Operations" />
         </nav>
         <div className="px-4 pb-4 lg:absolute lg:bottom-0 lg:left-0 lg:right-0">
           <LogoutButton />

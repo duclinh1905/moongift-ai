@@ -11,7 +11,11 @@ export function SiteHeader() {
           MoonGift AI
         </Link>
         <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
+          <Link href="/collections" className="text-sm font-medium text-muted-foreground hover:text-foreground">Collections</Link>
           <Link href="/catalog">Catalog</Link>
+          <Link href="/blog">Blog</Link>
+          <Link href="/case-studies">Case Studies</Link>
+          <Link href="/industries">Industries</Link>
           <Link href="/#advisor">AI Advisor</Link>
           <Link href="/#quote">Quote</Link>
           <Link href="/dashboard">CRM</Link>
