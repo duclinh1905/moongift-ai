@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
-import { getBlogPosts, getCaseStudies, getLandingPages, getPublishedProducts } from "@/lib/cms";
+import { getBlogPosts, getCaseStudies, getCollections, getLandingPages, getPublishedProducts } from "@/lib/cms";
 import { getSiteUrl } from "@/lib/env";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getSiteUrl();
-  const [products, posts, studies, industries] = await Promise.all([getPublishedProducts(), getBlogPosts(), getCaseStudies(), getLandingPages()]);
+  const [products, posts, studies, industries, collections] = await Promise.all([getPublishedProducts(), getBlogPosts(), getCaseStudies(), getLandingPages(), getCollections()]);
   const now = new Date();
   return [
     { url: baseUrl, lastModified: now, changeFrequency: "weekly", priority: 1 },
@@ -12,6 +12,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/blog`, lastModified: now, changeFrequency: "weekly", priority: 0.8 },
     { url: `${baseUrl}/case-studies`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
     { url: `${baseUrl}/industries`, lastModified: now, changeFrequency: "monthly", priority: 0.8 },
+    { url: `${baseUrl}/collections`, lastModified: now, changeFrequency: "weekly", priority: 0.85 },
+    ...collections.map((collection) => ({ url: `${baseUrl}/collections/${collection.slug}`, lastModified: collection.published_at ? new Date(collection.published_at) : now, changeFrequency: "monthly" as const, priority: 0.75 })),
     ...products.map((product) => ({ url: `${baseUrl}/products/${product.slug}`, lastModified: now, changeFrequency: "monthly" as const, priority: 0.75 })),
     ...posts.map((post) => ({ url: `${baseUrl}/blog/${post.slug}`, lastModified: new Date(post.published_at), changeFrequency: "monthly" as const, priority: 0.7 })),
     ...studies.map((study) => ({ url: `${baseUrl}/case-studies/${study.slug}`, lastModified: new Date(study.published_at), changeFrequency: "monthly" as const, priority: 0.7 })),

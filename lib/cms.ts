@@ -48,6 +48,12 @@ export type CaseStudy = {
   seo_description?: string | null;
 };
 
+export type Category = { id: string; slug: string; name: string; description?: string | null; seo_title?: string | null; seo_description?: string | null; published_at?: string | null };
+
+export type Collection = { id: string; slug: string; title: string; description: string; featured_image_url?: string | null; seo_title?: string | null; seo_description?: string | null; published_at?: string | null };
+
+export type Banner = { id: string; slug: string; title: string; body: string; cta_label?: string | null; cta_href?: string | null; image_url?: string | null; placement?: string | null; published_at?: string | null };
+
 export type LandingPage = {
   id: string;
   slug: string;
@@ -108,6 +114,20 @@ export const fallbackCaseStudies: CaseStudy[] = [
   }
 ];
 
+export const fallbackCategories: Category[] = [
+  { id: "premium", slug: "premium", name: "Premium Mooncake Gifts", description: "Executive-ready gift sets for high-value business relationships.", seo_title: "Premium Corporate Mooncake Gifts", seo_description: "Premium B2B mooncake gifts for client and employee programs." },
+  { id: "wellness", slug: "wellness", name: "Wellness Gifts", description: "Balanced gift sets for employee appreciation and culture programs.", seo_title: "Corporate Wellness Gifts", seo_description: "Wellness-led corporate gifting collections for teams." }
+];
+
+export const fallbackCollections: Collection[] = [
+  { id: "vip-client-gifts", slug: "vip-client-gifts", title: "VIP Client Gifts", description: "Premium mooncake and tea sets designed for executive relationships.", seo_title: "VIP Client Corporate Gifts", seo_description: "High-touch Mid-Autumn gift collections for VIP clients." },
+  { id: "employee-appreciation", slug: "employee-appreciation", title: "Employee Appreciation", description: "Scalable branded gifting programs for distributed teams.", seo_title: "Employee Appreciation Gift Collections", seo_description: "Branded employee gifting collections for Mid-Autumn programs." }
+];
+
+export const fallbackBanners: Banner[] = [
+  { id: "homepage-hero", slug: "homepage-hero", title: "Plan premium Mid-Autumn gifting with confidence", body: "Launch SEO-backed landing pages, collect qualified quote requests, and move every opportunity into a measurable CRM workflow.", cta_label: "Request quote", cta_href: "/#quote", placement: "homepage" }
+];
+
 export const industryPages: LandingPage[] = ["banking", "insurance", "logistics", "manufacturing", "real-estate", "technology"].map((slug) => ({
   id: slug,
   slug,
@@ -132,6 +152,29 @@ async function safeSelect<T>(table: string, fallback: T[], orderColumn = "publis
     return data as T[];
   } catch {
     return fallback;
+  }
+}
+
+export async function getCategories() {
+  return safeSelect<Category>("categories", fallbackCategories);
+}
+
+export async function getCollections() {
+  return safeSelect<Collection>("collections", fallbackCollections);
+}
+
+export async function getCollection(slug: string) {
+  return (await getCollections()).find((collection) => collection.slug === slug) ?? null;
+}
+
+export async function getBanners(placement = "homepage") {
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase.from("banners").select("*").eq("status", "published").eq("placement", placement).order("published_at", { ascending: false });
+    if (error || !data?.length) return fallbackBanners.filter((banner) => (banner.placement ?? "homepage") === placement);
+    return data as Banner[];
+  } catch {
+    return fallbackBanners.filter((banner) => (banner.placement ?? "homepage") === placement);
   }
 }
 
